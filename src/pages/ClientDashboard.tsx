@@ -15,8 +15,7 @@ import Footer from '../components/Footer';
 import ClientCampaignList from '../components/ClientCampaignList';
 import adDeskWhite from '../images/ad-desk-white.svg';
 import { subDays, startOfDay, format } from 'date-fns';
-
-const slugToClientName = (slug: string): string => slug.toUpperCase();
+import { toSlug } from '../utils/slug';
 
 interface ClientHeaderProps {
   clientName: string;
@@ -73,7 +72,7 @@ const ClientHeader = ({ clientName, agencia, onOpenFilters, onClearFilters, acti
   </header>
 );
 
-const ClientDashboardContent = ({ clientName }: { clientName: string }) => {
+const ClientDashboardContent = ({ clientSlug }: { clientSlug: string }) => {
   const { loading, error, filteredData, filters, setFilters, data, agencia } = useCampaign();
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -93,10 +92,16 @@ const ClientDashboardContent = ({ clientName }: { clientName: string }) => {
     });
   }, []);
 
+  // Resolve o nome do cliente a partir do slug usando os dados reais
+  const clientName = useMemo(() => {
+    const found = data.find(d => toSlug(d.cliente || '') === clientSlug);
+    return found?.cliente || clientSlug.toUpperCase();
+  }, [data, clientSlug]);
+
   // Todos os dados do cliente (sem filtro de período)
   const clientData = useMemo(
-    () => filteredData.filter(d => d.cliente?.toUpperCase() === clientName.toUpperCase()),
-    [filteredData, clientName]
+    () => filteredData.filter(d => toSlug(d.cliente || '') === clientSlug),
+    [filteredData, clientSlug]
   );
 
   // Data máxima normalizada para início do dia
@@ -384,7 +389,7 @@ const ClientDashboardContent = ({ clientName }: { clientName: string }) => {
 
 const ClientDashboard = ({ slug }: { slug: string }) => (
   <CampaignProvider>
-    <ClientDashboardContent clientName={slugToClientName(slug)} />
+    <ClientDashboardContent clientSlug={slug} />
   </CampaignProvider>
 );
 

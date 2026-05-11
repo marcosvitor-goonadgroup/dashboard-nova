@@ -23,7 +23,11 @@ const clientLogos: Record<string, string> = {
   'DEEZER': logoDeezer,
   'sebrae': logoSebrae,
   'Sebrae': logoSebrae,
-  'SEBRAE': logoSebrae
+  'SEBRAE': logoSebrae,
+  'Ministério da Saúde': logoSecom,
+  'Ministerio da Saude': logoSecom,
+  'MINISTÉRIO DA SAÚDE': logoSecom,
+  'MINISTERIO DA SAUDE': logoSecom
 };
 
 interface CampaignListProps {

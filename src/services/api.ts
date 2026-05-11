@@ -3,7 +3,8 @@ import { ApiResponse, ProcessedCampaignData, PIInfo } from '../types/campaign';
 import { parse, startOfDay } from 'date-fns';
 
 const CAMPAIGN_API_URLS = [
-  'https://nmbcoamazonia-api.vercel.app/google/sheets/1kNz-74ISYZgVQhDPYABD8ifxHgUN_xt_6KqVoVlZTtA/data?range=Consolidado'
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/1kNz-74ISYZgVQhDPYABD8ifxHgUN_xt_6KqVoVlZTtA/data?range=Consolidado',
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/1oGRov7eFfbAc_iZu0Mv3rjQYWChL_mb46Oy1-9O0TjA/data?range=Consolidado'
 ];
 
 const parseNumber = (value: string): number => {
@@ -41,13 +42,49 @@ const normalizeVeiculo = (veiculo: string): string => {
   return normalized;
 };
 
-// Colunas da planilha Consolidado (índice → campo):
-// [0] Nome Conta, [1] ID Conta, [2] Data, [3] Device, [4] Campaign Name, [5] Campaign ID,
-// [6] Ad Group Name, [7] Ad group ID, [8] Ad Name, [9] Ad ID, [10] Ad Final URL,
-// [11] Cost (Spend), [12] Impressions, [13] Clicks, [14] Video View, [15] Views 25%,
-// [16] Views 50%, [17] Views 75%, [18] Views 100%, [19] VA (engajamento),
-// [20] Agência, [21] Veículo, [22] Número PI, [23] Tipo de Compra, [24] Investimento,
-// [25] Formato, [26] Campanha, [27] Cliente
+// Mapeia índices das colunas a partir do header. Algumas planilhas têm uma coluna
+// extra "Localização" antes de "Cliente", então não podemos confiar em posições fixas.
+const COLUMN_KEYS = [
+  'data', 'campaignName', 'adGroupName', 'adName', 'impressions', 'clicks',
+  'videoViews', 'videoViews25', 'videoViews50', 'videoViews75', 'videoCompletions',
+  'totalEngagements', 'agencia', 'veiculo', 'numeroPi', 'tipoDeCompra',
+  'investimento', 'formato', 'campanha', 'cliente'
+] as const;
+type ColumnKey = typeof COLUMN_KEYS[number];
+
+const HEADER_ALIASES: Record<ColumnKey, string[]> = {
+  data: ['data'],
+  campaignName: ['campaign name'],
+  adGroupName: ['ad group name'],
+  adName: ['ad name'],
+  impressions: ['impressions'],
+  clicks: ['clicks'],
+  videoViews: ['video view', 'video views'],
+  videoViews25: ['views 25%'],
+  videoViews50: ['views 50%'],
+  videoViews75: ['views 75%'],
+  videoCompletions: ['views 100%'],
+  totalEngagements: ['va', 'engajamento'],
+  agencia: ['agência', 'agencia'],
+  veiculo: ['veículo', 'veiculo'],
+  numeroPi: ['número pi', 'numero pi'],
+  tipoDeCompra: ['tipo de compra'],
+  investimento: ['investimento'],
+  formato: ['formato'],
+  campanha: ['campanha'],
+  cliente: ['cliente']
+};
+
+const buildColumnIndex = (header: string[]): Record<ColumnKey, number> => {
+  const normalized = header.map(h => (h || '').trim().toLowerCase());
+  const index = {} as Record<ColumnKey, number>;
+  for (const key of COLUMN_KEYS) {
+    const aliases = HEADER_ALIASES[key];
+    index[key] = normalized.findIndex(h => aliases.includes(h));
+  }
+  return index;
+};
+
 export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
   try {
     const responses = await Promise.all(
@@ -57,49 +94,45 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
     const allData: ProcessedCampaignData[] = [];
 
     responses.forEach(response => {
-      if (response.data.success && response.data.data.values.length > 1) {
-        const rows = response.data.data.values.slice(1);
+      if (!response.data.success || response.data.data.values.length <= 1) return;
 
-        rows.forEach(row => {
-          if (row.length >= 14) {
-            const numeroPi = row[22] || '';
-            const veiculoRaw = row[21] || '';
-            const veiculo = normalizeVeiculo(veiculoRaw);
-            const cliente = row[27] || '';
-            const agencia = row[20] || '';
+      const [header, ...rows] = response.data.data.values;
+      const col = buildColumnIndex(header);
+      const get = (row: string[], key: ColumnKey): string =>
+        col[key] >= 0 ? (row[col[key]] || '') : '';
 
-            if (numeroPi === '#VALUE!') {
-              return;
-            }
+      rows.forEach(row => {
+        if (row.length < 14) return;
 
-            const dataRow: ProcessedCampaignData = {
-              date: parseSearchDate(row[2]),
-              campaignName: row[4] || '',
-              adSetName: row[6] || '',
-              adName: row[8] || '',
-              cost: parseCurrency(row[24]),
-              impressions: parseNumber(row[12]),
-              reach: 0,
-              clicks: parseNumber(row[13]),
-              videoViews: parseNumber(row[14]),
-              videoViews25: parseNumber(row[15]),
-              videoViews50: parseNumber(row[16]),
-              videoViews75: parseNumber(row[17]),
-              videoCompletions: parseNumber(row[18]),
-              totalEngagements: parseNumber(row[19]),
-              veiculo: veiculo,
-              tipoDeCompra: row[23] || '',
-              videoEstaticoAudio: row[25] || '',
-              image: '',
-              campanha: row[26] || '',
-              numeroPi: numeroPi,
-              cliente: cliente,
-              agencia: agencia
-            };
-            allData.push(dataRow);
-          }
-        });
-      }
+        const numeroPi = get(row, 'numeroPi');
+        if (numeroPi === '#VALUE!') return;
+
+        const dataRow: ProcessedCampaignData = {
+          date: parseSearchDate(get(row, 'data')),
+          campaignName: get(row, 'campaignName'),
+          adSetName: get(row, 'adGroupName'),
+          adName: get(row, 'adName'),
+          cost: parseCurrency(get(row, 'investimento')),
+          impressions: parseNumber(get(row, 'impressions')),
+          reach: 0,
+          clicks: parseNumber(get(row, 'clicks')),
+          videoViews: parseNumber(get(row, 'videoViews')),
+          videoViews25: parseNumber(get(row, 'videoViews25')),
+          videoViews50: parseNumber(get(row, 'videoViews50')),
+          videoViews75: parseNumber(get(row, 'videoViews75')),
+          videoCompletions: parseNumber(get(row, 'videoCompletions')),
+          totalEngagements: parseNumber(get(row, 'totalEngagements')),
+          veiculo: normalizeVeiculo(get(row, 'veiculo')),
+          tipoDeCompra: get(row, 'tipoDeCompra'),
+          videoEstaticoAudio: get(row, 'formato'),
+          image: '',
+          campanha: get(row, 'campanha'),
+          numeroPi: numeroPi,
+          cliente: get(row, 'cliente'),
+          agencia: get(row, 'agencia')
+        };
+        allData.push(dataRow);
+      });
     });
 
     return allData;
