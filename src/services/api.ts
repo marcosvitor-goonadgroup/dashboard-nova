@@ -4,7 +4,8 @@ import { parse, startOfDay } from 'date-fns';
 
 const CAMPAIGN_API_URLS = [
   'https://nmbcoamazonia-api.vercel.app/google/sheets/1kNz-74ISYZgVQhDPYABD8ifxHgUN_xt_6KqVoVlZTtA/data?range=Consolidado',
-  'https://nmbcoamazonia-api.vercel.app/google/sheets/1oGRov7eFfbAc_iZu0Mv3rjQYWChL_mb46Oy1-9O0TjA/data?range=Consolidado'
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/1oGRov7eFfbAc_iZu0Mv3rjQYWChL_mb46Oy1-9O0TjA/data?range=Consolidado',
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/12o_G1NmjZpIhff-ml68hfWWS5Oa_C18YlIa_3WyAi-c/data?range=Consolidado'
 ];
 
 const parseNumber = (value: string): number => {
@@ -45,32 +46,34 @@ const normalizeVeiculo = (veiculo: string): string => {
 // Mapeia índices das colunas a partir do header. Algumas planilhas têm uma coluna
 // extra "Localização" antes de "Cliente", então não podemos confiar em posições fixas.
 const COLUMN_KEYS = [
-  'data', 'campaignName', 'adGroupName', 'adName', 'impressions', 'clicks',
+  'data', 'campaignName', 'adGroupName', 'adName', 'impressions', 'reach', 'clicks',
   'videoViews', 'videoViews25', 'videoViews50', 'videoViews75', 'videoCompletions',
   'totalEngagements', 'agencia', 'veiculo', 'numeroPi', 'tipoDeCompra',
-  'investimento', 'formato', 'campanha', 'cliente'
+  'investimento', 'formato', 'image', 'campanha', 'cliente'
 ] as const;
 type ColumnKey = typeof COLUMN_KEYS[number];
 
 const HEADER_ALIASES: Record<ColumnKey, string[]> = {
   data: ['data'],
   campaignName: ['campaign name'],
-  adGroupName: ['ad group name'],
+  adGroupName: ['ad group name', 'ad set name'],
   adName: ['ad name'],
   impressions: ['impressions'],
+  reach: ['reach'],
   clicks: ['clicks'],
   videoViews: ['video view', 'video views'],
-  videoViews25: ['views 25%'],
-  videoViews50: ['views 50%'],
-  videoViews75: ['views 75%'],
-  videoCompletions: ['views 100%'],
-  totalEngagements: ['va', 'engajamento'],
+  videoViews25: ['views 25%', 'video views 25%'],
+  videoViews50: ['views 50%', 'video views 50%'],
+  videoViews75: ['views 75%', 'video views 75%'],
+  videoCompletions: ['views 100%', 'video completions'],
+  totalEngagements: ['va', 'engajamento', 'total engagements'],
   agencia: ['agência', 'agencia'],
   veiculo: ['veículo', 'veiculo'],
-  numeroPi: ['número pi', 'numero pi'],
+  numeroPi: ['número pi', 'numero pi', 'número pi'],
   tipoDeCompra: ['tipo de compra'],
-  investimento: ['investimento'],
-  formato: ['formato'],
+  investimento: ['investimento', 'cost'],
+  formato: ['formato', 'video_estatico_audio'],
+  image: ['image'],
   campanha: ['campanha'],
   cliente: ['cliente']
 };
@@ -114,7 +117,7 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
           adName: get(row, 'adName'),
           cost: parseCurrency(get(row, 'investimento')),
           impressions: parseNumber(get(row, 'impressions')),
-          reach: 0,
+          reach: parseNumber(get(row, 'reach')),
           clicks: parseNumber(get(row, 'clicks')),
           videoViews: parseNumber(get(row, 'videoViews')),
           videoViews25: parseNumber(get(row, 'videoViews25')),
@@ -125,7 +128,7 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
           veiculo: normalizeVeiculo(get(row, 'veiculo')),
           tipoDeCompra: get(row, 'tipoDeCompra'),
           videoEstaticoAudio: get(row, 'formato'),
-          image: '',
+          image: get(row, 'image'),
           campanha: get(row, 'campanha'),
           numeroPi: numeroPi,
           cliente: get(row, 'cliente'),

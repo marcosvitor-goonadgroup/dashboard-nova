@@ -8,6 +8,7 @@ import logoCittamobi from '../images/logo_cittamobi.png';
 import logoBibliaOn from '../images/logo_biblia_on.svg';
 import logoDeezer from '../images/deezer_logo.png';
 import logoSebrae from '../images/sebrae_logo.png';
+import logoSesi from '../images/sesi_logo.jpg';
 
 const clientLogos: Record<string, string> = {
   'Secom': logoSecom,
@@ -27,7 +28,10 @@ const clientLogos: Record<string, string> = {
   'Ministério da Saúde': logoSecom,
   'Ministerio da Saude': logoSecom,
   'MINISTÉRIO DA SAÚDE': logoSecom,
-  'MINISTERIO DA SAUDE': logoSecom
+  'MINISTERIO DA SAUDE': logoSecom,
+  'SESI': logoSesi,
+  'Sesi': logoSesi,
+  'sesi': logoSesi
 };
 
 interface CampaignListProps {
