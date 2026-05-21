@@ -54,7 +54,7 @@ const COLUMN_KEYS = [
 type ColumnKey = typeof COLUMN_KEYS[number];
 
 const HEADER_ALIASES: Record<ColumnKey, string[]> = {
-  data: ['data'],
+  data: ['data', 'date'],
   campaignName: ['campaign name'],
   adGroupName: ['ad group name', 'ad set name'],
   adName: ['ad name'],
