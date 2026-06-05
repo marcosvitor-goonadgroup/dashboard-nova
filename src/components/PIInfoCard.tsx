@@ -42,9 +42,10 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
         acc.realizado += item.realInvestment || item.cost;
         acc.impressoes += item.impressions;
         acc.cliques += item.clicks;
+        acc.views100 += item.videoCompletions;
         return acc;
       },
-      { realizado: 0, impressoes: 0, cliques: 0 }
+      { realizado: 0, impressoes: 0, cliques: 0, views100: 0 }
     );
   }, [campaignData]);
 
@@ -72,7 +73,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       }
     });
 
-    const realizadoGrouped = new Map<string, { realizado: number; cliques: number; impressoes: number }>();
+    const realizadoGrouped = new Map<string, { realizado: number; cliques: number; impressoes: number; views100: number }>();
     campaignData.forEach(item => {
       const key = `${normalizeVehicleName(item.veiculo)}|${item.tipoDeCompra.toUpperCase()}`;
       if (realizadoGrouped.has(key)) {
@@ -80,11 +81,13 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
         e.realizado += item.realInvestment || item.cost;
         e.cliques += item.clicks;
         e.impressoes += item.impressions;
+        e.views100 += item.videoCompletions;
       } else {
         realizadoGrouped.set(key, {
           realizado: item.realInvestment || item.cost,
           cliques: item.clicks,
           impressoes: item.impressions,
+          views100: item.videoCompletions,
         });
       }
     });
@@ -97,6 +100,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       quantidade: number;
       impressoesRealizadas: number;
       cliquesRealizados: number;
+      views100Realizadas: number;
       matchedByVehicle: boolean;
     }> = [];
 
@@ -117,7 +121,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       }
 
       if (!match && piGrouped.size === 1) {
-        match = { realizado: totaisRealizados.realizado, cliques: totaisRealizados.cliques, impressoes: totaisRealizados.impressoes };
+        match = { realizado: totaisRealizados.realizado, cliques: totaisRealizados.cliques, impressoes: totaisRealizados.impressoes, views100: totaisRealizados.views100 };
       }
 
       resultado.push({
@@ -128,6 +132,7 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
         quantidade: piData.quantidade,
         impressoesRealizadas: match?.impressoes ?? 0,
         cliquesRealizados: match?.cliques ?? 0,
+        views100Realizadas: match?.views100 ?? 0,
         matchedByVehicle,
       });
     });
@@ -258,12 +263,14 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
             <p className="text-xs font-medium text-gray-500 mb-3">Detalhamento por Veículo</p>
             <div className="space-y-4">
               {veiculacaoPorVeiculoTipo.map((item, index) => {
-                const isCPM = item.tipoDeCompra.toUpperCase().includes('CPM');
-                const isCPC = item.tipoDeCompra.toUpperCase().includes('CPC');
+                const tipoUpper = item.tipoDeCompra.toUpperCase();
+                const isCPCV = tipoUpper.includes('CPCV');
+                const isCPM = !isCPCV && tipoUpper.includes('CPM');
+                const isCPC = !isCPCV && tipoUpper.includes('CPC');
                 const pacingPrevisto = item.previsto * (pacingExpected?.percentElapsed ?? 1);
                 const investOk = item.realizado >= pacingPrevisto;
 
-                const volumeRealizado = isCPM ? item.impressoesRealizadas : isCPC ? item.cliquesRealizados : 0;
+                const volumeRealizado = isCPM ? item.impressoesRealizadas : isCPC ? item.cliquesRealizados : isCPCV ? item.views100Realizadas : 0;
                 const volumePacingPrevisto = item.quantidade * (pacingExpected?.percentElapsed ?? 1);
                 const volumePercent = item.quantidade > 0 ? Math.min((volumeRealizado / item.quantidade) * 100, 100) : 0;
                 const volumePacingPercent = item.quantidade > 0 ? Math.min((volumePacingPrevisto / item.quantidade) * 100, 100) : 0;
@@ -280,9 +287,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
                         <span className={`px-2 py-0.5 text-xs font-semibold rounded-lg ${investOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {investOk ? '✓ Invest.' : '! Invest.'}
                         </span>
-                        {(isCPM || isCPC) && item.quantidade > 0 && (
+                        {(isCPM || isCPC || isCPCV) && item.quantidade > 0 && (
                           <span className={`px-2 py-0.5 text-xs font-semibold rounded-lg ${volumeOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {volumeOk ? `✓ ${isCPM ? 'Impr.' : 'Cliques'}` : `! ${isCPM ? 'Impr.' : 'Cliques'}`}
+                            {volumeOk
+                              ? `✓ ${isCPM ? 'Impr.' : isCPCV ? 'Views 100%' : 'Cliques'}`
+                              : `! ${isCPM ? 'Impr.' : isCPCV ? 'Views 100%' : 'Cliques'}`}
                           </span>
                         )}
                       </div>
@@ -309,11 +318,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
                       </div>
                     </div>
 
-                    {(isCPM || isCPC) && item.quantidade > 0 && (
+                    {(isCPM || isCPC || isCPCV) && item.quantidade > 0 && (
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <p className="text-xs text-gray-500">
-                            {isCPM ? 'Impressões' : 'Cliques'} contratados:{' '}
+                            {isCPM ? 'Impressões' : isCPCV ? 'Views 100%' : 'Cliques'} contratados:{' '}
                             <span className="font-medium text-gray-700">{fmtNum(item.quantidade)}</span>
                           </p>
                           <p className="text-xs font-medium text-gray-600">
@@ -342,6 +351,11 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
                         {isCPC && item.realizado > 0 && item.cliquesRealizados > 0 && (
                           <p className="text-xs text-gray-500 mt-1">
                             CPC Real: {fmt(item.realizado / item.cliquesRealizados)}
+                          </p>
+                        )}
+                        {isCPCV && item.realizado > 0 && item.views100Realizadas > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            CPCV Real: {fmt(item.realizado / item.views100Realizadas)}
                           </p>
                         )}
                       </div>
