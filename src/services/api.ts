@@ -5,7 +5,8 @@ import { parse, startOfDay } from 'date-fns';
 const CAMPAIGN_API_URLS = [
   'https://nmbcoamazonia-api.vercel.app/google/sheets/1kNz-74ISYZgVQhDPYABD8ifxHgUN_xt_6KqVoVlZTtA/data?range=Consolidado',
   'https://nmbcoamazonia-api.vercel.app/google/sheets/1oGRov7eFfbAc_iZu0Mv3rjQYWChL_mb46Oy1-9O0TjA/data?range=Consolidado',
-  'https://nmbcoamazonia-api.vercel.app/google/sheets/12o_G1NmjZpIhff-ml68hfWWS5Oa_C18YlIa_3WyAi-c/data?range=Consolidado'
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/12o_G1NmjZpIhff-ml68hfWWS5Oa_C18YlIa_3WyAi-c/data?range=Consolidado',
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=dailymotion'
 ];
 
 const parseNumber = (value: string): number => {

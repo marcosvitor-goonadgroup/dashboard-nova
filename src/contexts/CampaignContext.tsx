@@ -146,7 +146,7 @@ export const CampaignProvider = ({ children }: CampaignProviderProps) => {
       const recentData = campanhaData.filter(d => isAfter(d.date, sevenDaysAgoFromToday));
 
       const isActive = recentData.some(
-        d => (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0) && d.cost > 0
+        d => (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0 || d.videoCompletions > 0 || d.totalEngagements > 0) && d.cost > 0
       );
 
       const lastActivity = campanhaData.reduce(

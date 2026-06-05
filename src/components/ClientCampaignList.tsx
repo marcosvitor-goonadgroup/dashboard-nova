@@ -39,7 +39,7 @@ const ClientCampaignList = ({ data, selectedPI, onSelectPI }: ClientCampaignList
       const impressoes = allItems.reduce((s, i) => s + i.impressions, 0);
       const cliques = allItems.reduce((s, i) => s + i.clicks, 0);
       const investimento = allItems.reduce((s, i) => s + i.cost, 0);
-      const isActive = allItems.some(i => i.date >= sevenDaysAgo && (i.impressions > 0 || i.clicks > 0) && i.cost > 0);
+      const isActive = allItems.some(i => i.date >= sevenDaysAgo && (i.impressions > 0 || i.clicks > 0 || i.videoViews > 0 || i.videoCompletions > 0 || i.totalEngagements > 0) && i.cost > 0);
 
       const piList = Array.from(pis.entries()).map(([pi, items]) => ({
         pi,

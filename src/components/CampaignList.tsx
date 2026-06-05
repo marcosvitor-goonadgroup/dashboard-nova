@@ -9,6 +9,7 @@ import logoBibliaOn from '../images/logo_biblia_on.svg';
 import logoDeezer from '../images/deezer_logo.png';
 import logoSebrae from '../images/sebrae_logo.png';
 import logoSesi from '../images/sesi_logo.jpg';
+import logoApex from '../images/logo-apex.png';
 
 const clientLogos: Record<string, string> = {
   'Secom': logoSecom,
@@ -31,7 +32,10 @@ const clientLogos: Record<string, string> = {
   'MINISTERIO DA SAUDE': logoSecom,
   'SESI': logoSesi,
   'Sesi': logoSesi,
-  'sesi': logoSesi
+  'sesi': logoSesi,
+  'Apex Brasil': logoApex,
+  'APEX BRASIL': logoApex,
+  'apex brasil': logoApex
 };
 
 interface CampaignListProps {
@@ -161,7 +165,7 @@ const CampaignList = ({
       // Verifica se cliente está ativo
       const sevenDaysAgoFromToday = subDays(new Date(), 7);
       const isClientActive = clientItems.some(
-        d => d.date > sevenDaysAgoFromToday && (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0) && d.cost > 0
+        d => d.date > sevenDaysAgoFromToday && (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0 || d.videoCompletions > 0 || d.totalEngagements > 0) && d.cost > 0
       );
 
       // Cria campanhas do cliente
@@ -173,7 +177,7 @@ const CampaignList = ({
             new Date(0)
           );
           const isActive = campanhaItems.some(
-            d => d.date > sevenDaysAgoFromToday && (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0) && d.cost > 0
+            d => d.date > sevenDaysAgoFromToday && (d.impressions > 0 || d.clicks > 0 || d.videoViews > 0 || d.videoCompletions > 0 || d.totalEngagements > 0) && d.cost > 0
           );
 
           return {
