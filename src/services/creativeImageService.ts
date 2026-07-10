@@ -6,6 +6,12 @@ const API_BASE = 'https://nmbcoamazonia-api.vercel.app';
 const BRB_FOLDER_ID = '1ge94s1Dcm5sBUjGUvvQj6kEXH6zjiwIV';
 
 /**
+ * Monta a URL da thumbnail de um vídeo do YouTube a partir do seu ID.
+ */
+const youtubeThumbnail = (videoId: string): string =>
+  `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+
+/**
  * Mapeamento estático de fallback: padrão de nome (substring) → URL da imagem
  * Usado quando a planilha não possui URL de imagem preenchida para o criativo.
  */
@@ -17,7 +23,16 @@ const STATIC_IMAGE_FALLBACKS: Array<{ pattern: string; url: string }> = [
   {
     pattern: 'libbsfarmaceutica',
     url: 'https://avidaplena.com.br/wp-content/uploads/2024/12/libbsfarmaceutica_vidaplenalibbs_image_540.webp'
-  }
+  },
+  // Apex Brasil — Exporta Mais Brasil 2026 / PE (PI 330458).
+  // Os seis anúncios do YouTube (instream pulável, in-feed e não pulável)
+  // reaproveitam os mesmos dois vídeos: o "filme" e o "motion".
+  { pattern: 'expmm0150', url: youtubeThumbnail('xLP-p0La5N0') },
+  { pattern: 'expmm0151', url: youtubeThumbnail('xLP-p0La5N0') },
+  { pattern: 'expmm0152', url: youtubeThumbnail('xLP-p0La5N0') },
+  { pattern: 'expmm0157', url: youtubeThumbnail('1MX0DR_mohc') },
+  { pattern: 'expmm0158', url: youtubeThumbnail('1MX0DR_mohc') },
+  { pattern: 'expmm0159', url: youtubeThumbnail('1MX0DR_mohc') }
 ];
 
 /**
