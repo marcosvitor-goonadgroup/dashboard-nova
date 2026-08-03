@@ -21,6 +21,19 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
 
   const normalizeVehicleName = (name: string): string => name.toLowerCase().trim();
 
+  // Agrupa veículos da mesma família de entrega. O PI costuma contratar "Fb Ig"
+  // (Meta) numa linha só, mas a entrega vem separada em Facebook, Instagram e
+  // WhatsApp — todos devem ser somados como realização dessa mesma contratação.
+  const vehicleFamily = (name: string): string => {
+    const n = normalizeVehicleName(name);
+    const metaAliases = [
+      'fb ig', 'fb/ig', 'fb-ig', 'fbig', 'meta',
+      'facebook', 'instagram', 'whatsapp', 'messenger', 'audience network', 'threads',
+    ];
+    if (metaAliases.includes(n)) return 'meta';
+    return n;
+  };
+
   // Pacing temporal: % dos dias decorridos no período do PI
   const pacingExpected = useMemo(() => {
     if (!piInfo || piInfo.length === 0) return null;
@@ -108,9 +121,33 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       const tipoKey = piData.tipoDeCompra.toUpperCase();
       const veiculoKey = normalizeVehicleName(piData.veiculo);
 
+      const familyKey = vehicleFamily(piData.veiculo);
+
       let match = realizadoGrouped.get(`${veiculoKey}|${tipoKey}`);
       let matchedByVehicle = !!match;
 
+      // Soma todos os realizados da MESMA família de veículo + mesmo tipo de
+      // compra. Ex.: contratado "Fb Ig" agrega Facebook + Instagram + WhatsApp.
+      if (!match) {
+        const agg = { realizado: 0, cliques: 0, impressoes: 0, views100: 0 };
+        let found = false;
+        for (const [k, v] of realizadoGrouped.entries()) {
+          const sep = k.lastIndexOf('|');
+          const vVeiculo = k.slice(0, sep);
+          const vTipo = k.slice(sep + 1);
+          if (vTipo === tipoKey && vehicleFamily(vVeiculo) === familyKey) {
+            agg.realizado += v.realizado;
+            agg.cliques += v.cliques;
+            agg.impressoes += v.impressoes;
+            agg.views100 += v.views100;
+            found = true;
+            matchedByVehicle = true;
+          }
+        }
+        if (found) match = agg;
+      }
+
+      // Fallback: veículo com nome divergente do contratado, mas mesmo tipo.
       if (!match) {
         for (const [k, v] of realizadoGrouped.entries()) {
           if (k.endsWith(`|${tipoKey}`)) {
