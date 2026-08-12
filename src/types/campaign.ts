@@ -53,6 +53,7 @@ export interface ProcessedCampaignData {
   cliente: string;
   agencia: string;
   realInvestment?: number; // Investimento calculado pela tabela de preços
+  searchTerm?: string; // Palavra-chave (apenas para veículo Google Search)
 }
 
 export interface CampaignMetrics {

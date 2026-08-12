@@ -31,6 +31,9 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       'facebook', 'instagram', 'whatsapp', 'messenger', 'audience network', 'threads',
     ];
     if (metaAliases.includes(n)) return 'meta';
+    // O PI contrata "Google Ads", mas a entrega de busca vem como "Google Search".
+    const googleAliases = ['google ads', 'google search', 'google', 'google search ads', 'google-ads'];
+    if (googleAliases.includes(n)) return 'google';
     return n;
   };
 

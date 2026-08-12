@@ -93,6 +93,8 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
     const tiposCompraSet = new Set<string>();
 
     data.forEach(item => {
+      // Google Search não tem criativos (é por palavra-chave) — fica de fora.
+      if (item.veiculo === 'Google Search') return;
       if (item.campanha) campanhasSet.add(item.campanha);
       if (item.veiculo) veiculosSet.add(item.veiculo);
       if (item.tipoDeCompra) tiposCompraSet.add(item.tipoDeCompra);
@@ -108,8 +110,8 @@ const CreativePerformance = ({ data }: CreativePerformanceProps) => {
   // Filter and aggregate data by creative (adName)
   const creativeData = useMemo(() => {
     // Os dados já vêm filtrados do componente pai (displayData)
-    // Aqui aplicamos apenas os filtros locais deste componente
-    let filteredData = data;
+    // Google Search é analisado no card de termos de busca, não aqui.
+    let filteredData = data.filter(d => d.veiculo !== 'Google Search');
 
     // Apply local filters (veículo e tipo de compra)
     if (selectedVeiculo !== 'all') {

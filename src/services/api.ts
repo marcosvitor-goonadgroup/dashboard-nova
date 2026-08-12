@@ -9,6 +9,11 @@ const CAMPAIGN_API_URLS = [
   'https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Consolidado'
 ];
 
+// Google Search vem de uma planilha própria, com granularidade por palavra-chave
+// (uma linha por termo de busca) e cabeçalho diferente do Consolidado.
+const GOOGLE_SEARCH_API_URL =
+  'https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Google%20Search';
+
 const parseNumber = (value: string): number => {
   if (!value || value === '') return 0;
   const cleaned = value.replace(/\./g, '').replace(',', '.');
@@ -89,11 +94,96 @@ const buildColumnIndex = (header: string[]): Record<ColumnKey, number> => {
   return index;
 };
 
+// Mapeia a planilha do Google Search (linha por palavra-chave) para o mesmo
+// formato ProcessedCampaignData usado no restante do dashboard, preservando o
+// termo de busca em `searchTerm`. Assim a entrega já entra somada nos totais,
+// no card do PI e em Performance por Veículo, sem tratamento especial.
+const mapGoogleSearchData = (values: string[][]): ProcessedCampaignData[] => {
+  if (!values || values.length <= 1) return [];
+
+  const [header, ...rows] = values;
+  const h = header.map(c => (c || '').trim().toLowerCase());
+  const col = (...names: string[]): number => {
+    for (const name of names) {
+      const i = h.indexOf(name);
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+
+  const idx = {
+    day: col('day', 'data', 'date'),
+    campaignName: col('campaign name'),
+    adGroupName: col('ad group name'),
+    keyword: col('search keyword', 'search term'),
+    impressions: col('impressions'),
+    clicks: col('clicks'),
+    engagements: col('engagements', 'total engagements'),
+    investimento: col('investimento', 'cost (spend)', 'cost'),
+    agencia: col('agência', 'agencia'),
+    veiculo: col('veículo', 'veiculo'),
+    numeroPi: col('número pi', 'numero pi'),
+    tipoDeCompra: col('tipo de compra'),
+    campanha: col('campanha'),
+    cliente: col('cliente'),
+  };
+
+  const get = (row: string[], i: number): string => (i >= 0 ? (row[i] || '') : '');
+
+  const out: ProcessedCampaignData[] = [];
+  rows.forEach(row => {
+    if (row.length === 0) return;
+    const campanha = get(row, idx.campanha);
+    if (!campanha || campanha.trim() === '') return;
+
+    out.push({
+      date: parseSearchDate(get(row, idx.day)),
+      campaignName: get(row, idx.campaignName),
+      adSetName: get(row, idx.adGroupName),
+      adName: '',
+      cost: parseCurrency(get(row, idx.investimento)),
+      impressions: parseNumber(get(row, idx.impressions)),
+      reach: 0,
+      clicks: parseNumber(get(row, idx.clicks)),
+      videoViews: 0,
+      videoViews25: 0,
+      videoViews50: 0,
+      videoViews75: 0,
+      videoCompletions: 0,
+      totalEngagements: parseNumber(get(row, idx.engagements)),
+      veiculo: normalizeVeiculo(get(row, idx.veiculo)),
+      tipoDeCompra: get(row, idx.tipoDeCompra),
+      videoEstaticoAudio: '',
+      image: '',
+      campanha,
+      numeroPi: get(row, idx.numeroPi),
+      cliente: get(row, idx.cliente),
+      agencia: get(row, idx.agencia),
+      searchTerm: get(row, idx.keyword),
+    });
+  });
+
+  return out;
+};
+
+const fetchGoogleSearchData = async (): Promise<ProcessedCampaignData[]> => {
+  try {
+    const res = await axios.get<ApiResponse>(GOOGLE_SEARCH_API_URL);
+    if (!res.data.success) return [];
+    return mapGoogleSearchData(res.data.data.values);
+  } catch (error) {
+    // Falha no Google Search não deve derrubar o carregamento do restante.
+    console.error('Erro ao buscar dados do Google Search:', error);
+    return [];
+  }
+};
+
 export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
   try {
-    const responses = await Promise.all(
-      CAMPAIGN_API_URLS.map(url => axios.get<ApiResponse>(url))
-    );
+    const [responses, googleSearchData] = await Promise.all([
+      Promise.all(CAMPAIGN_API_URLS.map(url => axios.get<ApiResponse>(url))),
+      fetchGoogleSearchData(),
+    ]);
 
     const allData: ProcessedCampaignData[] = [];
 
@@ -138,6 +228,8 @@ export const fetchCampaignData = async (): Promise<ProcessedCampaignData[]> => {
         allData.push(dataRow);
       });
     });
+
+    allData.push(...googleSearchData);
 
     return allData;
   } catch (error) {

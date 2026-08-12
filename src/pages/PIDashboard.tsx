@@ -6,11 +6,13 @@ import VehicleMetrics from '../components/VehicleMetrics';
 import ComparisonToggle from '../components/ComparisonToggle';
 import PIInfoCard from '../components/PIInfoCard';
 import CreativePerformance from '../components/CreativePerformance';
+import SearchTermsAnalysis from '../components/SearchTermsAnalysis';
 import ParticlesBackground from '../components/ParticlesBackground';
 import Footer from '../components/Footer';
 import adDeskWhite from '../images/ad-desk-white.svg';
 import { subDays, startOfDay, format } from 'date-fns';
 import { toSlug } from '../utils/slug';
+import { ProcessedSearchData } from '../types/campaign';
 
 interface PIDashboardProps {
   clientSlug: string;
@@ -162,6 +164,24 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
     };
   }, [piData, periodFilter, maxAvailableDate, sevenDaysAgoFromMaxDate]);
 
+  // Termos de busca do Google Search (uma linha por palavra-chave) para o card
+  // dedicado. Reaproveita displayData (já filtrado por período/veículo).
+  const searchTermsData = useMemo<ProcessedSearchData[]>(() => {
+    return displayData
+      .filter(d => d.veiculo === 'Google Search')
+      .map(d => ({
+        date: d.date,
+        campaignName: d.campaignName,
+        searchTerm: d.searchTerm || '',
+        cost: d.cost,
+        impressions: d.impressions,
+        clicks: d.clicks,
+        veiculo: d.veiculo,
+        campanha: d.campanha,
+        ctr: d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0,
+      }));
+  }, [displayData]);
+
   const displayMetrics = useMemo(() => {
     const totalInv = displayData.reduce((s, i) => s + i.cost, 0);
     const totalInvR = displayData.reduce((s, i) => s + (i.realInvestment || 0), 0);
@@ -302,6 +322,14 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
             />
 
             <CreativePerformance data={displayData} />
+
+            {searchTermsData.length > 0 && (
+              <SearchTermsAnalysis
+                data={searchTermsData}
+                selectedCampaign={null}
+                periodFilter="all"
+              />
+            )}
           </div>
         </main>
 
