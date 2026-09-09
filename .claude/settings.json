@@ -3,7 +3,10 @@
     "allow": [
       "Bash(node -e ' *)",
       "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Consolidado\" -o apex.json)",
-      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Google%20Search\" -o gs.json)"
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Google%20Search\" -o gs.json)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/write-excel-file/package.json'\\).version\\)\")",
+      "Bash(npm audit *)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\('total vulns:',JSON.stringify\\(j.metadata.vulnerabilities\\)\\);console.log\\('pacotes afetados:',Object.keys\\(j.vulnerabilities||{}\\).join\\(', '\\)||'nenhum'\\);}catch\\(e\\){console.log\\('n/a'\\)}}\\)\")"
     ]
   }
 }

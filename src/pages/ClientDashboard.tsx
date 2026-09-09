@@ -104,6 +104,14 @@ const ClientDashboardContent = ({ clientSlug }: { clientSlug: string }) => {
     [filteredData, clientSlug]
   );
 
+  // Base completa do cliente, ignorando os filtros — usada só no download.
+  // Parte de `data` (e não de `filteredData`) para escopar por cliente sem
+  // vazar dados dos demais clientes nesta tela.
+  const clientBaseData = useMemo(
+    () => data.filter(d => toSlug(d.cliente || '') === clientSlug),
+    [data, clientSlug]
+  );
+
   // Data máxima normalizada para início do dia
   const maxAvailableDate = useMemo(() => {
     const dates = clientData.map(d => d.date);
@@ -264,7 +272,12 @@ const ClientDashboardContent = ({ clientSlug }: { clientSlug: string }) => {
           onClearFilters={handleClearFilters}
           activeFiltersCount={activeFiltersCount}
         />
-        <Filters isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
+        <Filters
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
+          exportRows={clientBaseData}
+          exportFileName={`base-${clientSlug}`}
+        />
 
         <main>
           <div className="space-y-6">
