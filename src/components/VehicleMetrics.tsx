@@ -33,6 +33,7 @@ interface VehicleData {
   veiculo: string;
   impressoes: number;
   views: number;
+  views100: number;
   engajamento: number;
   cliques: number;
   ctr: number;
@@ -242,6 +243,7 @@ const VehicleMetrics = ({ data, periodFilter, filters, vehicleBenchmarks, select
         veiculo,
         impressoes: metrics.impressoes,
         views: metrics.views,
+        views100: metrics.videoCompletions,
         engajamento: metrics.engajamento,
         cliques: metrics.cliques,
         ctr,
@@ -304,6 +306,9 @@ const VehicleMetrics = ({ data, periodFilter, filters, vehicleBenchmarks, select
                   Views
                 </th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700 border-r border-gray-200">
+                  Views 100%
+                </th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-700 border-r border-gray-200">
                   Engajamento
                 </th>
                 <th className="text-center py-3 px-4 font-semibold text-gray-700 border-r border-gray-200">
@@ -342,6 +347,9 @@ const VehicleMetrics = ({ data, periodFilter, filters, vehicleBenchmarks, select
                   </td>
                   <td className="py-3 px-4 text-center text-gray-700 font-medium border-r border-gray-200">
                     {formatNumber(vehicle.views)}
+                  </td>
+                  <td className="py-3 px-4 text-center text-gray-700 font-medium border-r border-gray-200">
+                    {formatNumber(vehicle.views100)}
                   </td>
                   <td className="py-3 px-4 text-center text-gray-700 font-medium border-r border-gray-200">
                     {formatNumber(vehicle.engajamento)}

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ' *)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Consolidado\" -o apex.json)",
+      "Bash(curl -s \"https://nmbcoamazonia-api.vercel.app/google/sheets/1S0yKsoLvblMRrzRfOxOrpROJ6nNAkrnTnQGTwelFwdY/data?range=Google%20Search\" -o gs.json)"
+    ]
+  }
+}
