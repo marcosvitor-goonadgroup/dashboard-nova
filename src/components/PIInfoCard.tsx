@@ -129,6 +129,14 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
       let match = realizadoGrouped.get(`${veiculoKey}|${tipoKey}`);
       let matchedByVehicle = !!match;
 
+      // Algumas fontes (ex.: aba Google Search) não preenchem "Tipo de Compra".
+      // Nesse caso a entrega sem tipo é atribuída a esta linha do PI desde que
+      // ela seja a ÚNICA contratação dessa família de veículo — senão seria
+      // impossível saber a qual tipo pertence e contaríamos em dobro.
+      const familyLinesInPI = Array.from(piGrouped.values())
+        .filter(p => vehicleFamily(p.veiculo) === familyKey).length;
+      const acceptsUntyped = familyLinesInPI === 1;
+
       // Soma todos os realizados da MESMA família de veículo + mesmo tipo de
       // compra. Ex.: contratado "Fb Ig" agrega Facebook + Instagram + WhatsApp.
       if (!match) {
@@ -138,7 +146,8 @@ const PIInfoCard = ({ numeroPi, campaignData = [], defaultExpanded = false }: PI
           const sep = k.lastIndexOf('|');
           const vVeiculo = k.slice(0, sep);
           const vTipo = k.slice(sep + 1);
-          if (vTipo === tipoKey && vehicleFamily(vVeiculo) === familyKey) {
+          const tipoOk = vTipo === tipoKey || (vTipo.trim() === '' && acceptsUntyped);
+          if (tipoOk && vehicleFamily(vVeiculo) === familyKey) {
             agg.realizado += v.realizado;
             agg.cliques += v.cliques;
             agg.impressoes += v.impressoes;
