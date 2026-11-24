@@ -8,11 +8,17 @@ export interface AudienceDefinition {
   matches: string[];
 }
 
-interface AudienceRouteConfig {
+export interface AudienceSetup {
+  audiences: AudienceDefinition[];
+  // Trechos do Ad Group Name de conjuntos que entregam para TODOS os públicos.
+  // Seus resultados são divididos igualmente entre os públicos.
+  sharedMatches?: string[];
+}
+
+interface AudienceRouteConfig extends AudienceSetup {
   clientSlug: string;
   campaignSlug: string;
   piSlug: string;
-  audiences: AudienceDefinition[];
 }
 
 const AUDIENCE_ROUTES: AudienceRouteConfig[] = [
@@ -41,6 +47,8 @@ const AUDIENCE_ROUTES: AudienceRouteConfig[] = [
         matches: ['_noticias-fnancas-economia_', '_noticias-financas-economia_'],
       },
     ],
+    // O conjunto 1st-party entrega para todos os públicos acima.
+    sharedMatches: ['_1st-party_'],
   },
 ];
 
@@ -48,7 +56,9 @@ export const getAudiencesForRoute = (
   clientSlug: string,
   campaignSlug: string,
   piSlug: string
-): AudienceDefinition[] | null =>
-  AUDIENCE_ROUTES.find(
+): AudienceSetup | null => {
+  const route = AUDIENCE_ROUTES.find(
     r => r.clientSlug === clientSlug && r.campaignSlug === campaignSlug && r.piSlug === piSlug
-  )?.audiences ?? null;
+  );
+  return route ? { audiences: route.audiences, sharedMatches: route.sharedMatches } : null;
+};

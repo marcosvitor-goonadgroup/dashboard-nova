@@ -64,7 +64,7 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
 
   // Card "Desempenho por Público" só aparece nas rotas configuradas
-  const audiences = useMemo(
+  const audienceSetup = useMemo(
     () => getAudiencesForRoute(clientSlug, campaignSlug, piSlug),
     [clientSlug, campaignSlug, piSlug]
   );
@@ -331,7 +331,13 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
 
             <CreativePerformance data={displayData} />
 
-            {audiences && <AudiencePerformance data={displayData} audiences={audiences} />}
+            {audienceSetup && (
+              <AudiencePerformance
+                data={displayData}
+                audiences={audienceSetup.audiences}
+                sharedMatches={audienceSetup.sharedMatches}
+              />
+            )}
 
             {searchTermsData.length > 0 && (
               <SearchTermsAnalysis

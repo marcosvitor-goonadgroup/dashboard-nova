@@ -5,6 +5,14 @@ import { AudienceDefinition } from '../config/audiences';
 interface AudiencePerformanceProps {
   data: ProcessedCampaignData[];
   audiences: AudienceDefinition[];
+  // Conjuntos que entregam para todos os públicos: divididos igualmente entre eles.
+  sharedMatches?: string[];
+}
+
+interface Totals {
+  investimento: number;
+  impressoes: number;
+  cliques: number;
 }
 
 interface AudienceRow {
@@ -23,44 +31,75 @@ const fmtCurrency = (n: number) =>
 const fmtNum = (n: number) => new Intl.NumberFormat('pt-BR').format(Math.round(n));
 const fmtPct = (n: number) => `${n.toFixed(2).replace('.', ',')}%`;
 
-const buildRow = (label: string, items: ProcessedCampaignData[], detail?: string): AudienceRow => {
-  const investimento = items.reduce((s, i) => s + (i.realInvestment || i.cost), 0);
-  const impressoes = items.reduce((s, i) => s + i.impressions, 0);
-  const cliques = items.reduce((s, i) => s + i.clicks, 0);
-  return {
-    label,
-    detail,
-    investimento,
-    impressoes,
-    cliques,
-    ctr: impressoes > 0 ? (cliques / impressoes) * 100 : 0,
-    cpc: cliques > 0 ? investimento / cliques : 0,
-    cpm: impressoes > 0 ? (investimento / impressoes) * 1000 : 0,
-  };
-};
+const sumItems = (items: ProcessedCampaignData[]): Totals => ({
+  investimento: items.reduce((s, i) => s + (i.realInvestment || i.cost), 0),
+  impressoes: items.reduce((s, i) => s + i.impressions, 0),
+  cliques: items.reduce((s, i) => s + i.clicks, 0),
+});
 
-const AudiencePerformance = ({ data, audiences }: AudiencePerformanceProps) => {
-  const { rows, others, total } = useMemo(() => {
+const buildRow = (label: string, t: Totals, detail?: string): AudienceRow => ({
+  label,
+  detail,
+  ...t,
+  ctr: t.impressoes > 0 ? (t.cliques / t.impressoes) * 100 : 0,
+  cpc: t.cliques > 0 ? t.investimento / t.cliques : 0,
+  cpm: t.impressoes > 0 ? (t.investimento / t.impressoes) * 1000 : 0,
+});
+
+const hasAny = (adGroup: string, needles: string[]) =>
+  needles.some(m => adGroup.includes(m.toLowerCase()));
+
+const AudiencePerformance = ({ data, audiences, sharedMatches = [] }: AudiencePerformanceProps) => {
+  const { rows, others, total, shared } = useMemo(() => {
     const buckets = audiences.map(() => [] as ProcessedCampaignData[]);
+    const sharedItems: ProcessedCampaignData[] = [];
     const unmatched: ProcessedCampaignData[] = [];
 
     data.forEach(item => {
       const adGroup = (item.adSetName || '').toLowerCase();
-      const idx = audiences.findIndex(a => a.matches.some(m => adGroup.includes(m.toLowerCase())));
+      const idx = audiences.findIndex(a => hasAny(adGroup, a.matches));
       if (idx >= 0) buckets[idx].push(item);
+      else if (hasAny(adGroup, sharedMatches)) sharedItems.push(item);
       else unmatched.push(item);
     });
+
+    // Parte igual do conjunto compartilhado que cabe a cada público
+    const sharedTotals = sumItems(sharedItems);
+    const n = audiences.length || 1;
+    const sharedPart: Totals = {
+      investimento: sharedTotals.investimento / n,
+      impressoes: sharedTotals.impressoes / n,
+      cliques: sharedTotals.cliques / n,
+    };
+    const hasShared = sharedItems.length > 0;
 
     const unmatchedGroups = Array.from(new Set(unmatched.map(i => i.adSetName).filter(Boolean)));
 
     return {
-      rows: audiences.map((a, i) => buildRow(a.label, buckets[i])),
+      rows: audiences.map((a, i) => {
+        const own = sumItems(buckets[i]);
+        return buildRow(
+          a.label,
+          {
+            investimento: own.investimento + (hasShared ? sharedPart.investimento : 0),
+            impressoes: own.impressoes + (hasShared ? sharedPart.impressoes : 0),
+            cliques: own.cliques + (hasShared ? sharedPart.cliques : 0),
+          },
+          hasShared ? `Inclui ${fmtCurrency(sharedPart.investimento)} do conjunto compartilhado` : undefined
+        );
+      }),
       others: unmatched.length > 0
-        ? buildRow('Outros conjuntos', unmatched, unmatchedGroups.join(', '))
+        ? buildRow('Outros conjuntos', sumItems(unmatched), unmatchedGroups.join(', '))
         : null,
-      total: buildRow('Total', data),
+      total: buildRow('Total', sumItems(data)),
+      shared: hasShared
+        ? {
+            groups: Array.from(new Set(sharedItems.map(i => i.adSetName).filter(Boolean))),
+            investimento: sharedTotals.investimento,
+          }
+        : null,
     };
-  }, [data, audiences]);
+  }, [data, audiences, sharedMatches]);
 
   const audienceInvest = rows.reduce((s, r) => s + r.investimento, 0);
   if (audienceInvest === 0 && rows.every(r => r.impressoes === 0)) return null;
@@ -117,6 +156,13 @@ const AudiencePerformance = ({ data, audiences }: AudiencePerformanceProps) => {
           Resultados por público atingido, identificado pelo conjunto de anúncios (Ad Group Name).
           Em verde, o público com melhor CTR.
         </p>
+        {shared && (
+          <p className="text-xs text-gray-500 mt-2">
+            O conjunto <span className="font-medium break-all">{shared.groups.join(', ')}</span> entrega
+            para todos os públicos: seus resultados ({fmtCurrency(shared.investimento)}) foram divididos
+            igualmente entre os {audiences.length} públicos.
+          </p>
+        )}
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-x-auto">
