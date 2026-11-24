@@ -7,6 +7,8 @@ import ComparisonToggle from '../components/ComparisonToggle';
 import PIInfoCard from '../components/PIInfoCard';
 import CreativePerformance from '../components/CreativePerformance';
 import SearchTermsAnalysis from '../components/SearchTermsAnalysis';
+import AudiencePerformance from '../components/AudiencePerformance';
+import { getAudiencesForRoute } from '../config/audiences';
 import ParticlesBackground from '../components/ParticlesBackground';
 import Footer from '../components/Footer';
 import adDeskWhite from '../images/ad-desk-white.svg';
@@ -60,6 +62,12 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
   const [periodFilter, setPeriodFilter] = useState<'7days' | 'all'>('7days');
   const [comparisonMode, setComparisonMode] = useState<'benchmark' | 'previous'>('benchmark');
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
+
+  // Card "Desempenho por Público" só aparece nas rotas configuradas
+  const audiences = useMemo(
+    () => getAudiencesForRoute(clientSlug, campaignSlug, piSlug),
+    [clientSlug, campaignSlug, piSlug]
+  );
 
   // Resolve nomes reais a partir dos slugs
   const clientName = useMemo(() => {
@@ -322,6 +330,8 @@ const PIDashboardContent = ({ clientSlug, campaignSlug, piSlug }: PIDashboardPro
             />
 
             <CreativePerformance data={displayData} />
+
+            {audiences && <AudiencePerformance data={displayData} audiences={audiences} />}
 
             {searchTermsData.length > 0 && (
               <SearchTermsAnalysis
